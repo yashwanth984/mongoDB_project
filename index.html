@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bear API Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        .bear-list {
+            margin-top: 20px;
+        }
+        .bear-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bear API Frontend</h1>
+        
+        <div>
+            <h2>Add a New Bear</h2>
+            <input type="text" id="species" placeholder="Species">
+            <input type="text" id="latinName" placeholder="Latin Name">
+            <button onclick="addBear()">Add Bear</button>
+        </div>
+
+        <div class="bear-list">
+            <h2>Bear List</h2>
+            <div id="bears"></div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchBears() {
+            try {
+                const response = await fetch('http://localhost:5001/api/bears');
+                const bears = await response.json();
+                displayBears(bears);
+            } catch (error) {
+                console.error('Error fetching bears:', error);
+            }
+        }
+
+        function displayBears(bears) {
+            const bearsContainer = document.getElementById('bears');
+            bearsContainer.innerHTML = '';
+            bears.forEach(bear => {
+                const bearItem = document.createElement('div');
+                bearItem.className = 'bear-item';
+                bearItem.innerHTML = `
+                    <p><strong>Species:</strong> ${bear.species}</p>
+                    <p><strong>Latin Name:</strong> ${bear.latinName}</p>
+                    <button onclick="deleteBear('${bear._id}')">Delete</button>
+                    <button onclick="showUpdateForm('${bear._id}', '${bear.species}', '${bear.latinName}')">Update</button>
+                `;
+                bearsContainer.appendChild(bearItem);
+            });
+        }
+
+        async function addBear() {
+            const species = document.getElementById('species').value;
+            const latinName = document.getElementById('latinName').value;
+
+            if (!species || !latinName) {
+                alert('Please provide both species and latinName for the bear.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5001/api/bears', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ species, latinName })
+                });
+                const newBear = await response.json();
+                fetchBears();
+            } catch (error) {
+                console.error('Error adding bear:', error);
+            }
+        }
+
+        async function deleteBear(id) {
+            try {
+                await fetch(`http://localhost:5001/api/bears/${id}`, {
+                    method: 'DELETE'
+                });
+                fetchBears();
+            } catch (error) {
+                console.error('Error deleting bear:', error);
+            }
+        }
+
+        function showUpdateForm(id, species, latinName) {
+            const speciesInput = document.getElementById('species');
+            const latinNameInput = document.getElementById('latinName');
+            const updateButton = document.createElement('button');
+
+            speciesInput.value = species;
+            latinNameInput.value = latinName;
+
+            updateButton.innerText = 'Update Bear';
+            updateButton.onclick = () => updateBear(id);
+
+            document.querySelector('.container').appendChild(updateButton);
+        }
+
+        async function updateBear(id) {
+            const species = document.getElementById('species').value;
+            const latinName = document.getElementById('latinName').value;
+
+            try {
+                await fetch(`http://localhost:5001/api/bears/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ species, latinName })
+                });
+                fetchBears();
+            } catch (error) {
+                console.error('Error updating bear:', error);
+            }
+        }
+
+        // Initial fetch of bear data
+        fetchBears();
+    </script>
+</body>
+</html>
